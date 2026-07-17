@@ -22,6 +22,32 @@ const TITLES = {
   error: 'Hit a snag',
 }
 
+const PORTIONS = [
+  { value: 0.25, label: '¼' },
+  { value: 0.5, label: '½' },
+  { value: 0.75, label: '¾' },
+  { value: 1, label: 'All of it' },
+]
+
+/** Scale the analysis to the portion actually eaten. Quality (health_score,
+ *  verdict copy) is unchanged — half a chocolate bar is still chocolate —
+ *  but every quantity halves, which also halves its calorie-weighted drag
+ *  on the Day Score. */
+export function scaleAnalysis(analysis, portion) {
+  if (!analysis || portion === 1) return analysis
+  const scaled = { ...analysis, portion }
+  scaled.calories = Math.round((analysis.calories || 0) * portion)
+  for (const key of ['protein_g', 'carbs_g', 'fat_g', 'fiber_g', 'sugar_g', 'sodium_mg']) {
+    scaled[key] = Math.round((analysis[key] || 0) * portion * 10) / 10
+  }
+  return scaled
+}
+
+export function portionLabel(p) {
+  const match = PORTIONS.find((o) => o.value === p)
+  return match && p !== 1 ? match.label : p < 1 ? `${Math.round(p * 100)}%` : null
+}
+
 function verdictFor(score) {
   if (score >= 8) return { label: 'Green light', emoji: '🌿', tone: 'good', line: 'Your body will high-five you.' }
   if (score >= 5) return { label: 'Fair game', emoji: '⚖️', tone: 'mid', line: 'Solid middle ground — enjoy it.' }
@@ -96,6 +122,7 @@ export default function CaptureFlow({ open, onClose, onLogged, onPass, profile, 
   const [labelImg, setLabelImg] = useState(null)
   const [queryDraft, setQueryDraft] = useState('')
   const [analysis, setAnalysis] = useState(null)
+  const [portion, setPortion] = useState(1)
   const [error, setError] = useState(null)
   const [quip, setQuip] = useState(0)
   const inputRef = useRef(null)
@@ -109,6 +136,7 @@ export default function CaptureFlow({ open, onClose, onLogged, onPass, profile, 
       setLabelImg(null)
       setQueryDraft('')
       setAnalysis(null)
+      setPortion(1)
       setError(null)
     }
   }, [open])
@@ -126,6 +154,7 @@ export default function CaptureFlow({ open, onClose, onLogged, onPass, profile, 
     setLabelImg(null)
     setQueryDraft('')
     setAnalysis(null)
+    setPortion(1)
     setStep('meal')
   }
 
@@ -188,7 +217,8 @@ export default function CaptureFlow({ open, onClose, onLogged, onPass, profile, 
     }
   }
 
-  const impact = step === 'result' && analysis?.is_food && data ? computeImpact(data, analysis, profile) : null
+  const eaten = scaleAnalysis(analysis, portion)
+  const impact = step === 'result' && eaten?.is_food && data ? computeImpact(data, eaten, profile) : null
 
   return (
     <div className="sheet-backdrop" onClick={onClose}>
@@ -289,10 +319,24 @@ export default function CaptureFlow({ open, onClose, onLogged, onPass, profile, 
                   <ScorePill n={analysis.health_score} />
                 </div>
                 <div className="result-kcal">
-                  <strong>{Math.round(analysis.calories)}</strong> kcal
+                  <strong>{Math.round(eaten.calories)}</strong> kcal
+                  {portion !== 1 && <span className="kcal-portion">for the {portionLabel(portion)} you're eating</span>}
                 </div>
-                {impact && <ImpactCard impact={impact} analysis={analysis} />}
-                <MacroGrid a={analysis} />
+                <div className="portion-row" role="radiogroup" aria-label="How much of it are you eating?">
+                  <span className="portion-label">Eating…</span>
+                  {PORTIONS.map((p) => (
+                    <button
+                      key={p.value}
+                      className={`chip portion-chip ${portion === p.value ? 'chip-on' : ''}`}
+                      aria-pressed={portion === p.value}
+                      onClick={() => setPortion(p.value)}
+                    >
+                      {p.label}
+                    </button>
+                  ))}
+                </div>
+                {impact && <ImpactCard impact={impact} analysis={eaten} />}
+                <MacroGrid a={eaten} />
                 <p className="meal-summary">{analysis.health_summary}</p>
                 <p className="meal-tip">💡 {analysis.tip}</p>
                 <div className="result-badges">
@@ -312,7 +356,7 @@ export default function CaptureFlow({ open, onClose, onLogged, onPass, profile, 
                       id: crypto.randomUUID(),
                       time: new Date().toISOString(),
                       thumb: mealImg?.thumb ?? null,
-                      analysis,
+                      analysis: eaten,
                     })
                   }
                 >

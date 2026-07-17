@@ -38,19 +38,32 @@ export function currentFastHours(all) {
 
 /**
  * Day Score, 0–100:
- *   Nourish (50) — average meal health score for the day
+ *   Nourish (50) — calorie-weighted average meal health score for the day
  *   Hydrate (25) — water vs. goal
  *   Rhythm  (25) — overnight fast vs. 14h target; falls back to the eating
  *                  window when there is no prior-day data.
+ *   Junk penalty — every meal scoring 3 or below costs a flat 5 points on
+ *                  top of the average, so repeat offenses always hurt (a
+ *                  plain average made the fourth chocolate bar free).
  */
 export function dayScore(all, key) {
   const day = getDay(all, key)
   const goal = all.settings?.waterGoal || 8
   const meals = sortedByTime(day.meals)
 
-  const nourish = meals.length
-    ? (meals.reduce((s, m) => s + (m.analysis.health_score ?? 0), 0) / meals.length / 10) * 50
-    : 0
+  // Calorie-weighted: a big bad meal drags the day harder than a small one,
+  // and junk can't hide behind one virtuous salad. Plain average is the
+  // fallback while every logged meal still has zero-calorie estimates.
+  let nourish = 0
+  if (meals.length) {
+    const calOf = (m) => Math.max(0, m.analysis.calories || 0)
+    const totalCal = meals.reduce((s, m) => s + calOf(m), 0)
+    nourish = totalCal > 0
+      ? (meals.reduce((s, m) => s + (m.analysis.health_score ?? 0) * calOf(m), 0) / totalCal / 10) * 50
+      : (meals.reduce((s, m) => s + (m.analysis.health_score ?? 0), 0) / meals.length / 10) * 50
+  }
+
+  const penalty = meals.filter((m) => (m.analysis.health_score ?? 0) <= 3).length * 5
 
   const hydrate = clamp01(day.water / goal) * 25
 
@@ -76,10 +89,11 @@ export function dayScore(all, key) {
   }
 
   return {
-    total: Math.round(nourish + hydrate + rhythm),
+    total: Math.max(0, Math.round(nourish + hydrate + rhythm - penalty)),
     nourish: Math.round(nourish),
     hydrate: Math.round(hydrate),
     rhythm: Math.round(rhythm),
+    penalty,
     rhythmLabel,
   }
 }

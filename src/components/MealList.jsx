@@ -72,6 +72,7 @@ export default function MealList({ meals, onDelete, readOnly = false }) {
                 <span className="meal-name">{a.name}</span>
                 <span className="meal-meta">
                   {fmtTime(meal.time)} · {Math.round(a.calories)} kcal
+                  {a.portion && a.portion < 1 ? ` · ${a.portion === 0.25 ? '¼' : a.portion === 0.5 ? '½' : a.portion === 0.75 ? '¾' : `${Math.round(a.portion * 100)}%`} portion` : ''}
                   {a.demo ? ' · demo' : ''}
                 </span>
               </span>

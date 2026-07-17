@@ -216,6 +216,11 @@ export default function App() {
                   <Pillar icon="💧" label="Hydrate" value={score.hydrate} max={25} />
                   <Pillar icon="⏱️" label="Rhythm" value={score.rhythm} max={25} note={score.rhythmLabel} />
                 </div>
+                {score.penalty > 0 && (
+                  <p className="junk-penalty">
+                    🍩 Junk penalty <strong>−{score.penalty}</strong> — meals scoring 3 or under cost 5 points each
+                  </p>
+                )}
               </section>
 
               <section className="card macros-card rise">
