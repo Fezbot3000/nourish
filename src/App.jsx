@@ -270,7 +270,19 @@ export default function App() {
         </button>
       </nav>
 
-      <CaptureFlow open={capturing} onClose={() => setCapturing(false)} onLogged={handleLogged} profile={data.profile} />
+      <CaptureFlow
+        open={capturing}
+        onClose={() => setCapturing(false)}
+        onLogged={handleLogged}
+        onPass={() => {
+          setCapturing(false)
+          const quips = ['Crisis averted 😄', 'Your future self says thanks 🙌', 'Willpower 1 — Snacks 0 💪', 'Dodged, deliciously 🕶️']
+          showToast(quips[Math.floor(Math.random() * quips.length)])
+          buzz()
+        }}
+        profile={data.profile}
+        data={data}
+      />
       <SettingsSheet
         open={settingsOpen}
         onClose={() => setSettingsOpen(false)}

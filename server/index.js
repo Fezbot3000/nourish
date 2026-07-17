@@ -13,11 +13,13 @@ app.get('/api/health', (req, res) => {
 
 app.post('/api/analyze', async (req, res) => {
   try {
-    const { meal, label, context } = req.body ?? {}
-    if (!meal?.data || !meal?.media_type) {
-      return res.status(400).json({ error: 'A meal photo is required.' })
+    const { meal, label, query, context } = req.body ?? {}
+    const hasPhoto = meal?.data && meal?.media_type
+    const hasQuery = typeof query === 'string' && query.trim().length > 0
+    if (!hasPhoto && !hasQuery) {
+      return res.status(400).json({ error: 'A meal photo or a description is required.' })
     }
-    const result = await analyzeMeal({ meal, label, context })
+    const result = await analyzeMeal({ meal: hasPhoto ? meal : null, label, query: hasQuery ? query.trim() : null, context })
     res.json(result)
   } catch (err) {
     console.error('analyze failed:', err)

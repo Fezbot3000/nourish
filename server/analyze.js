@@ -85,16 +85,22 @@ function clampAnalysis(a) {
   return a
 }
 
-async function analyzeWithClaude({ meal, label, context }) {
-  const content = [
-    { type: 'image', source: { type: 'base64', media_type: meal.media_type, data: meal.data } },
-  ]
+async function analyzeWithClaude({ meal, label, query, context }) {
+  const content = []
+  if (meal?.data) {
+    content.push({ type: 'image', source: { type: 'base64', media_type: meal.media_type, data: meal.data } })
+  }
   if (label?.data) {
     content.push({ type: 'image', source: { type: 'base64', media_type: label.media_type, data: label.data } })
   }
-  let prompt = label?.data
-    ? 'Analyze this meal. The second photo is its nutrition label — use it, scaled to the visible portion.'
-    : 'Analyze this meal photo.'
+  let prompt
+  if (meal?.data) {
+    prompt = label?.data
+      ? 'Analyze this meal. The second photo is its nutrition label — use it, scaled to the visible portion.'
+      : 'Analyze this meal photo.'
+  } else {
+    prompt = `The user is wondering about a food they have not photographed. Their description: "${String(query).slice(0, 200)}". Estimate nutrition for a typical serving of what they describe.`
+  }
   if (GOAL_PHRASES[context?.goal]) {
     prompt += ` User context: they're aiming to ${GOAL_PHRASES[context.goal]}${
       context.calorie_target ? ` on roughly ${context.calorie_target} kcal a day` : ''
@@ -187,13 +193,13 @@ async function demoAnalysis({ label }) {
 
 // ---------------------------------------------------------------------------
 
-export async function analyzeMeal({ meal, label, context }) {
+export async function analyzeMeal({ meal, label, query, context }) {
   await ready
   if (!client) {
     return { ...(await demoAnalysis({ label })), demo: true }
   }
   try {
-    return { ...(await analyzeWithClaude({ meal, label, context })), demo: false }
+    return { ...(await analyzeWithClaude({ meal, label, query, context })), demo: false }
   } catch (err) {
     // Credentials rejected mid-flight — fall back to demo instead of a dead app.
     if (err instanceof Anthropic.AuthenticationError || /authentication|api.?key/i.test(err?.message ?? '')) {
