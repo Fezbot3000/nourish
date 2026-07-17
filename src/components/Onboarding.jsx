@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import GoogleButton from './GoogleButton.jsx'
 import {
   calorieTarget,
   suggestedWaterGoal,
@@ -30,7 +31,7 @@ const ACTIVITIES = [
 const num = (v) => (v === '' || v == null ? null : Number(v))
 const digits = (setter, max = 5) => (e) => setter(e.target.value.replace(/[^\d.]/g, '').slice(0, max))
 
-export default function Onboarding({ initial, isEdit, onComplete, onDismiss }) {
+export default function Onboarding({ initial, isEdit, onComplete, onDismiss, onSignIn }) {
   const startStep = isEdit ? 1 : 0
   const [step, setStep] = useState(startStep)
 
@@ -153,10 +154,14 @@ export default function Onboarding({ initial, isEdit, onComplete, onDismiss }) {
               <button type="submit" className="ob-continue">
                 Set me up
               </button>
+              {onSignIn && <GoogleButton onClick={onSignIn} />}
               <button type="button" className="ghost-btn" onClick={onDismiss}>
                 Skip for now
               </button>
             </div>
+            {onSignIn && (
+              <p className="ob-note">Already use Nourish on another device? Google sign-in pulls your journal here.</p>
+            )}
           </>
         )}
 

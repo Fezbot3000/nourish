@@ -303,6 +303,7 @@ export default function App() {
           isEdit={editingProfile}
           onComplete={completeOnboarding}
           onDismiss={dismissOnboarding}
+          onSignIn={syncAvailable && !user ? signIn : null}
         />
       )}
 
