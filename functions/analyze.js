@@ -43,8 +43,8 @@ const SCHEMA = {
       type: 'integer',
       description: '0 to 10. 10 = nutrient-dense whole food, 0 = ultra-processed with little nutritional value',
     },
-    health_summary: { type: 'string', description: 'One friendly sentence explaining the score' },
-    tip: { type: 'string', description: 'One short, kind, actionable suggestion. Never moralize.' },
+    health_summary: { type: 'string', description: 'One-sentence verdict in the accountability-coach voice: proud at 8+, unimpressed at 4-7, guilt-laying at 3 and below' },
+    tip: { type: 'string', description: 'One short, blunt command for next time. Specific to this meal.' },
     confidence: { type: 'string', enum: ['low', 'medium', 'high'] },
     used_label: { type: 'boolean', description: 'True if a nutrition label photo informed the numbers' },
   },
@@ -56,14 +56,20 @@ const SCHEMA = {
   additionalProperties: false,
 }
 
-const SYSTEM = `You are the nutrition engine inside "Nourish", a photo-first food journal. Users snap a photo of what they are about to eat — sometimes with a second photo of the package's nutrition label — and you estimate what it is and what's in it.
+const SYSTEM = `You are the nutrition engine inside "Nourish", a photo-first food journal built for a single user who has explicitly asked for zero-sugarcoating accountability. They snap a photo of what they are about to eat — sometimes with a second photo of the package's nutrition label — and you estimate what it is, what's in it, and deliver the verdict they signed up for.
 
 Rules:
 - The first image is always the meal. If a second image is provided, it is a nutrition label: read it carefully and scale its per-serving values to the portion actually visible in the meal photo, then set used_label to true.
 - Estimate for the whole visible serving the user is about to eat, not a reference serving size.
 - health_score: 10 means nutrient-dense whole food; 0 means ultra-processed with little nutritional value. Weigh processing level, vegetables and fiber, protein quality, added sugar, sodium, and portion size.
-- Voice: warm and encouraging, zero judgment. The tip should sound like a knowledgeable friend, not a lecture, and should be specific to this meal.
-- A short user-context note (their goal, daily calorie target) may accompany the request. Let it quietly inform the tip — portion or swap suggestions aligned with their goal — but never mention the context itself or comment on their body.
+
+Voice — accountability coach, calibrated by score:
+- 8–10: celebrate hard and make the pride land. This is what discipline looks like — say so plainly, name what they got right.
+- 4–7: unimpressed honesty. Name exactly what drags the score down. No cushioning, no "but hey".
+- 0–3: disappointment and guilt, laid on thick. Call the decision what it is, cite its ugliest numbers, and if their goal is provided, hold the meal up against it ("you said you were losing weight — explain this"). The sting must come from being precisely right about THIS meal, not from generic insults.
+- Aim everything at the food and the decision, never at their body or their worth. The shame is "you chose this", never "you are this".
+- tip is a short command for next time, not a gentle suggestion.
+- A short user-context note (their goal, daily calorie target) may accompany the request — use it openly as ammunition in the verdict and the tip.
 - If no food or drink is visible, set is_food to false, use a playful description of what you do see, and set all numeric fields to 0.`
 
 const GOAL_PHRASES = {
@@ -125,32 +131,32 @@ const DEMO_MEALS = [
     is_food: true, name: 'Berry oatmeal bowl',
     description: 'Rolled oats topped with blueberries, banana and chia seeds',
     calories: 380, protein_g: 11, carbs_g: 62, fat_g: 9, fiber_g: 10, sugar_g: 18, sodium_mg: 105,
-    health_score: 9, health_summary: 'Whole grains, fruit and seeds make this a genuinely nourishing start.',
-    tip: 'A spoon of Greek yogurt would push the protein toward lunch-proof territory.',
+    health_score: 9, health_summary: 'Whole grains, fruit and seeds — this is what a decision you never have to apologize for looks like.',
+    tip: 'Add Greek yogurt tomorrow and make it a 10.',
     confidence: 'high', used_label: false,
   },
   {
     is_food: true, name: 'Grilled chicken salad',
     description: 'Grilled chicken over mixed greens, tomato, cucumber and avocado',
     calories: 460, protein_g: 38, carbs_g: 18, fat_g: 26, fiber_g: 8, sugar_g: 6, sodium_mg: 520,
-    health_score: 9, health_summary: 'Lean protein plus half a rainbow of vegetables — hard to beat.',
-    tip: 'Dressing on the side keeps you in charge of the sodium.',
+    health_score: 9, health_summary: 'Lean protein and half a rainbow — you actually showed up for yourself here.',
+    tip: 'Keep the dressing on the side and this stays your best habit.',
     confidence: 'high', used_label: false,
   },
   {
     is_food: true, name: 'Pepperoni pizza slice',
     description: 'Large slice of pepperoni pizza with a thick crust',
     calories: 340, protein_g: 14, carbs_g: 36, fat_g: 15, fiber_g: 2, sugar_g: 4, sodium_mg: 760,
-    health_score: 4, health_summary: 'Tasty, but refined flour and cured meat keep the score modest.',
-    tip: 'Pair it with something green and this slice becomes part of a decent meal.',
+    health_score: 4, health_summary: 'Refined flour, cured meat and 760mg of sodium — you know exactly what this is and it isn\'t progress.',
+    tip: 'Next slice buys a plate of something green first. That\'s the deal.',
     confidence: 'medium', used_label: false,
   },
   {
     is_food: true, name: 'Salmon with roast veg',
     description: 'Baked salmon fillet with roasted broccoli and sweet potato',
     calories: 520, protein_g: 36, carbs_g: 34, fat_g: 24, fiber_g: 7, sugar_g: 9, sodium_mg: 310,
-    health_score: 10, health_summary: 'Omega-3s, fiber and colorful veg — this is the gold standard.',
-    tip: 'Nothing to fix here. Maybe teach this plate to your other meals.',
+    health_score: 10, health_summary: 'Omega-3s, fiber and colour on one plate — the gold standard, and you built it on purpose.',
+    tip: 'Nothing to fix. Teach this plate to your other meals.',
     confidence: 'high', used_label: false,
   },
 ]
