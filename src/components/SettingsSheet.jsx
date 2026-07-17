@@ -4,6 +4,10 @@ export default function SettingsSheet({
   settings,
   apiMode,
   profileName,
+  syncAvailable,
+  user,
+  onSignIn,
+  onSignOut,
   onEditProfile,
   onGoal,
   onClearToday,
@@ -41,6 +45,24 @@ export default function SettingsSheet({
         </div>
 
         <div className="setting-row">
+          <span>Sync</span>
+          {!syncAvailable ? (
+            <span className="chip">not configured</span>
+          ) : user ? (
+            <button className="chip chip-on" onClick={onSignOut} title="Tap to sign out">
+              {user.name?.split(' ')[0] || user.email} · syncing ✓
+            </button>
+          ) : (
+            <button className="chip chip-on" onClick={onSignIn}>
+              Sign in with Google
+            </button>
+          )}
+        </div>
+        {syncAvailable && !user && (
+          <p className="setting-note">Sign in and your journal follows you across phone and desktop.</p>
+        )}
+
+        <div className="setting-row">
           <span>AI analysis</span>
           <span className={`chip ${apiMode === 'live' ? 'chip-on' : 'chip-demo'}`}>
             {apiMode === 'live' ? 'live · Claude' : apiMode === 'demo' ? 'demo mode' : '…'}
@@ -58,7 +80,7 @@ export default function SettingsSheet({
             Clear today's log
           </button>
           <button className="ghost-btn danger" onClick={onEraseAll}>
-            Erase all data
+            Erase data on this device
           </button>
         </div>
 

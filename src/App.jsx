@@ -10,6 +10,7 @@ import Onboarding from './components/Onboarding.jsx'
 import { useStore, todayKey, getDay, eraseAll } from './lib/store.js'
 import { dayScore, macroTotals, streakCount, scoreWord } from './lib/score.js'
 import { calorieTarget, suggestedWaterGoal } from './lib/profile.js'
+import { syncAvailable, signIn, signOutUser } from './lib/sync.js'
 import { burst } from './lib/confetti.js'
 
 const buzz = (ms = 12) => navigator.vibrate?.(ms)
@@ -81,7 +82,7 @@ const GearIcon = () => (
 )
 
 export default function App() {
-  const { data, update } = useStore()
+  const { data, update, user } = useStore()
   const [tab, setTab] = useState('today')
   const [capturing, setCapturing] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
@@ -91,9 +92,9 @@ export default function App() {
 
   useEffect(() => {
     fetch('/api/health')
-      .then((r) => r.json())
+      .then((r) => (r.ok ? r.json() : { mode: 'demo' }))
       .then((d) => setApiMode(d.mode))
-      .catch(() => {})
+      .catch(() => setApiMode('demo'))
   }, [])
 
   const key = todayKey()
@@ -276,13 +277,18 @@ export default function App() {
         settings={data.settings}
         apiMode={apiMode}
         profileName={data.profile?.name}
+        syncAvailable={syncAvailable}
+        user={user}
+        onSignIn={signIn}
+        onSignOut={signOutUser}
         onEditProfile={() => {
           setSettingsOpen(false)
           setEditingProfile(true)
         }}
         onGoal={(g) => update((d) => (d.settings.waterGoal = g))}
         onClearToday={() => {
-          update((d) => delete d.days[key])
+          // Write an empty day (not a delete) so the reset syncs across devices.
+          update((d) => (d.days[key] = { meals: [], water: 0 }))
           setSettingsOpen(false)
           showToast('Today cleared — fresh slate')
         }}

@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { processImage } from '../lib/image.js'
 import { calorieTarget } from '../lib/profile.js'
+import { localDemoAnalysis } from '../lib/demo.js'
 import { ScorePill, MacroGrid } from './MealList.jsx'
 
 const QUIPS = [
@@ -84,11 +85,23 @@ export default function CaptureFlow({ open, onClose, onLogged, profile }) {
             : null,
         }),
       })
+      // No analysis backend deployed (static hosting) → graceful demo fallback.
+      if (res.status === 404) {
+        setAnalysis(await localDemoAnalysis({ usedLabel: !!label }))
+        setStep('result')
+        return
+      }
       const data = await res.json().catch(() => ({}))
       if (!res.ok) throw new Error(data.error || 'Analysis failed')
       setAnalysis(data)
       setStep('result')
     } catch (err) {
+      if (err instanceof TypeError) {
+        // Network unreachable — still let the flow complete in demo mode.
+        setAnalysis(await localDemoAnalysis({ usedLabel: !!label }))
+        setStep('result')
+        return
+      }
       setError(err.message || 'Analysis failed — please try again.')
       setStep('error')
     }
