@@ -4,6 +4,7 @@ import { calorieTarget } from '../lib/profile.js'
 import { localDemoAnalysis } from '../lib/demo.js'
 import { dayScore, macroTotals, currentFastHours } from '../lib/score.js'
 import { todayKey, getDay } from '../lib/store.js'
+import { PORTIONS, scaleAnalysis, portionLabel } from '../lib/portion.js'
 import { ScorePill, MacroGrid } from './MealList.jsx'
 
 const QUIPS = [
@@ -20,32 +21,6 @@ const TITLES = {
   analyzing: 'Reading your plate',
   result: "Here's the story",
   error: 'Hit a snag',
-}
-
-const PORTIONS = [
-  { value: 0.25, label: '¼' },
-  { value: 0.5, label: '½' },
-  { value: 0.75, label: '¾' },
-  { value: 1, label: 'All of it' },
-]
-
-/** Scale the analysis to the portion actually eaten. Quality (health_score,
- *  verdict copy) is unchanged — half a chocolate bar is still chocolate —
- *  but every quantity halves, which also halves its calorie-weighted drag
- *  on the Day Score. */
-export function scaleAnalysis(analysis, portion) {
-  if (!analysis || portion === 1) return analysis
-  const scaled = { ...analysis, portion }
-  scaled.calories = Math.round((analysis.calories || 0) * portion)
-  for (const key of ['protein_g', 'carbs_g', 'fat_g', 'fiber_g', 'sugar_g', 'sodium_mg']) {
-    scaled[key] = Math.round((analysis[key] || 0) * portion * 10) / 10
-  }
-  return scaled
-}
-
-export function portionLabel(p) {
-  const match = PORTIONS.find((o) => o.value === p)
-  return match && p !== 1 ? match.label : p < 1 ? `${Math.round(p * 100)}%` : null
 }
 
 function verdictFor(score) {

@@ -10,6 +10,7 @@ import Onboarding from './components/Onboarding.jsx'
 import { useStore, todayKey, getDay, eraseAll } from './lib/store.js'
 import { dayScore, macroTotals, streakCount, scoreWord } from './lib/score.js'
 import { calorieTarget, suggestedWaterGoal } from './lib/profile.js'
+import { rescaleAnalysis, portionLabel } from './lib/portion.js'
 import { syncAvailable, signIn, signOutUser } from './lib/sync.js'
 import { burst } from './lib/confetti.js'
 
@@ -178,6 +179,14 @@ export default function App() {
     showToast('Removed')
   }
 
+  function editMealPortion(id, portion) {
+    update((d) => {
+      const meal = d.days[key]?.meals.find((m) => m.id === id)
+      if (meal) meal.analysis = rescaleAnalysis(meal.analysis, portion)
+    })
+    showToast(portion === 1 ? 'Counted as the whole serving' : `Counted as ${portionLabel(portion)} of the serving`)
+  }
+
   return (
     <div className="app">
       <header className="topbar">
@@ -245,7 +254,7 @@ export default function App() {
               <FastCard all={data} />
               <section className="meals-section rise">
                 <h2 className="section-title">Today's plate</h2>
-                <MealList meals={day.meals} onDelete={deleteMeal} />
+                <MealList meals={day.meals} onDelete={deleteMeal} onEditPortion={editMealPortion} />
               </section>
             </div>
           </div>

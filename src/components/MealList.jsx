@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { PORTIONS, portionLabel } from '../lib/portion.js'
 
 export function ScorePill({ n }) {
   const tone = n >= 8 ? 'good' : n >= 5 ? 'mid' : 'low'
@@ -36,7 +37,7 @@ export function MacroGrid({ a }) {
 
 const fmtTime = (t) => new Date(t).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
 
-export default function MealList({ meals, onDelete, readOnly = false }) {
+export default function MealList({ meals, onDelete, onEditPortion, readOnly = false }) {
   const [openId, setOpenId] = useState(null)
 
   if (!meals.length) {
@@ -72,7 +73,7 @@ export default function MealList({ meals, onDelete, readOnly = false }) {
                 <span className="meal-name">{a.name}</span>
                 <span className="meal-meta">
                   {fmtTime(meal.time)} · {Math.round(a.calories)} kcal
-                  {a.portion && a.portion < 1 ? ` · ${a.portion === 0.25 ? '¼' : a.portion === 0.5 ? '½' : a.portion === 0.75 ? '¾' : `${Math.round(a.portion * 100)}%`} portion` : ''}
+                  {a.portion && a.portion < 1 ? ` · ${portionLabel(a.portion)} portion` : ''}
                   {a.demo ? ' · demo' : ''}
                 </span>
               </span>
@@ -81,6 +82,21 @@ export default function MealList({ meals, onDelete, readOnly = false }) {
             {open && (
               <div className="meal-detail">
                 <MacroGrid a={a} />
+                {!readOnly && onEditPortion && (
+                  <div className="portion-row" role="radiogroup" aria-label="How much of it did you eat?">
+                    <span className="portion-label">Ate…</span>
+                    {PORTIONS.map((p) => (
+                      <button
+                        key={p.value}
+                        className={`chip portion-chip ${(a.portion ?? 1) === p.value ? 'chip-on' : ''}`}
+                        aria-pressed={(a.portion ?? 1) === p.value}
+                        onClick={() => onEditPortion(meal.id, p.value)}
+                      >
+                        {p.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
                 <p className="meal-summary">{a.health_summary}</p>
                 <p className="meal-tip">💡 {a.tip}</p>
                 {!readOnly && (
