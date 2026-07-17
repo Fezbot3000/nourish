@@ -35,18 +35,31 @@ Nourish is an installable web app (PWA): it has an app icon, launches full-scree
 
 Caveat: it only works while your computer is awake and on the same network. Note that the installed app has its own storage, separate from the browser tab — set up your profile inside the installed app.
 
-### Option B — deploy it (works anywhere, recommended)
+### Option B — the live Firebase deployment (works anywhere)
 
-The app is a single Node server in production (`npm run build && npm start`, honors `PORT`), which fits the free/hobby tier of Render, Railway, or Fly.io:
+The app is deployed on Firebase: **https://nourish-fez.web.app**
 
-1. Push this folder to a GitHub repo
-2. Create a new **Web Service** on [Render](https://render.com) (or similar) pointing at the repo
-   - Build command: `npm install && npm run build`
-   - Start command: `npm start`
-3. Add an environment variable `ANTHROPIC_API_KEY` so photo analysis is live
-4. Open the deployed URL on your phone → *Add to Home Screen*
+Open it on your phone → *Add to Home Screen*. The camera button uses the native photo picker, so on iOS/Android you'll get the "Take Photo / Photo Library" choice directly.
 
-The camera button uses the native photo picker, so on iOS/Android you'll get the "Take Photo / Photo Library" choice directly.
+## Firebase architecture
+
+| Piece | What |
+|---|---|
+| Hosting | serves `dist/`, SPA rewrite, `/api/**` → the `api` Cloud Function |
+| Auth | Google sign-in (enable the provider in the Firebase console) |
+| Firestore (`australia-southeast1`) | `users/{uid}` (profile/settings) + `users/{uid}/days/{date}` — rules restrict everyone to their own data |
+| Cloud Function `api` (`us-central1`) | the Claude analysis endpoint; needs the Blaze plan + the `ANTHROPIC_API_KEY` secret |
+
+**Sync model**: localStorage stays the source of truth for instant UX. Signed in, every change is mirrored to Firestore (debounced write-through) and remote changes stream back live; conflicts resolve last-write-wins per day. Signed out, the app is fully local. Until the Cloud Function is deployed, photo analysis falls back to client-side demo estimates.
+
+Deploy commands:
+
+```bash
+npm run build
+npx firebase deploy --only hosting,firestore     # site + rules
+npx firebase functions:secrets:set ANTHROPIC_API_KEY   # paste key when prompted (Blaze plan required)
+npx firebase deploy --only functions             # the analyze API
+```
 
 ## Production build
 
